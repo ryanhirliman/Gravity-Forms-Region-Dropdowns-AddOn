@@ -3,6 +3,8 @@
 	$.gfad = function() {
 
 		var $gfad = $('.gfad_form_wrapper');
+		const formID = $gfad.attr('id').replace( /^\D+/g, '');
+		console.log( formID );
 		
 		if ($gfad.length > 0) {
 			
@@ -27,24 +29,13 @@
 			});
 			
 			/* display the proper region input */
-			function gfad_map_text_to_select($countryf, $text, $us, $ca) {
-				if (is_US($countryf)) {
-					$us.val($text.val());
-					$ca.val('');
-					$us.show();
-					$ca.hide();
-					$text.hide();
-				} else if (is_Canada($countryf)) {
-					$ca.val($text.val());
-					$us.val('');
-					$us.hide();
-					$ca.show();
+			function gfad_map_text_to_select($countryf, $text, $select) {
+				if ( is_US($countryf) || is_Canada($countryf) ) {
+					$select.val($text.val());
 					$text.hide();
 				} else {
-					$ca.val('');
-					$us.val('');
-					$us.hide();
-					$ca.hide();
+					$select.val('');
+					$select.hide();
 					$text.show();
 				}
 			}
@@ -53,22 +44,18 @@
 				$text.val($sel.val());
 			}
 			
-			function gfad_region_reset($countryf, $text, $us, $ca) {
+			function gfad_region_reset($countryf, $text, $select) {
 				$text.val('');
-				$us.val('');
-				$ca.val('');
+				$select.val('');
 				
 				if (is_US($countryf)) {
-					$us.show();
-					$ca.hide();
+					populateUS($select);
 					$text.hide();
 				} else if (is_Canada($countryf)) {
-					$ca.show();
-					$us.hide();
+					populateCA($select);
 					$text.hide();
 				} else {
-					$ca.hide();
-					$us.hide();
+					$select.hide();
 					$text.show();
 				}			
 			}
@@ -88,6 +75,14 @@
 				
 				return false;			
 			}
+
+			function populateUS($select) {
+				$select.html(stateopts);
+			}
+
+			function populateCA($select) {
+				$select.html(provopts);
+			}
 		
 			/* loop through every form on the page */
 			$gfad.each(function(x) 
@@ -97,7 +92,8 @@
 					var $address = $(this),
 						$statef = $address.find('.address_state'),
 						$statetext = $statef.children('input[type="text"]'),
-						tabindex = $statetext.attr('tabindex');
+						$statename = $statetext.attr('name');
+						tabindex = $statetext.attr('tabindex') || 0;
 					/* Is there a text input for state? (International forms only) */
 					if ($statetext.length > 0) {					
 						/*
@@ -107,31 +103,27 @@
 						var $countryf = $statef.closest('.has_country').find('.address_country > select');
 						if ($countryf.length > 0) {
 							/* create state dropdowns, set to variable. */
-							$('<select id="states_us_' + x + '_' + i + '" class="gfad_us" tabindex="' + tabindex + '>' + stateopts + '</select>').insertAfter($statetext);
-							$('<select id="states_us_' + x + '_' + i + '" class="gfad_ca" tabindex="' + tabindex + '>' + provopts + '</select>').insertAfter($statetext);
-							var $us = $statef.find('.gfad_us'),
-								$ca = $statef.find('.gfad_ca');
+							/* 
+								state options = stateopts
+								provence options = provopts
+							*/
+							$stateselect = $('<select id="states_' + x + '_' + i + '" name="'+ $statename +'" class="gfad_stateselect" tabindex="' + tabindex + '">' + stateopts + '</select>');
+							$stateselect.insertAfter($statetext);
 							
 							/* change displayed dropdown when country changes */					
 							$countryf.on('change', function() {						
-								gfad_region_reset($countryf, $statetext, $us, $ca);
+								gfad_region_reset($countryf, $statetext, $stateselect);
 							});
 							
 							/* set region text value when dropdown changes */
-							$us.on('change', function() {
+							$stateselect.on('change', function() {
 								if (is_US($countryf)) {
-									gfad_map_select_to_text($(this), $statetext);
-								}
-							});
-	
-							$ca.on('change', function() {
-								if (is_Canada($countryf)) {
 									gfad_map_select_to_text($(this), $statetext);
 								}
 							});
 							
 							/* set values on load */
-							gfad_map_text_to_select($countryf, $statetext, $us, $ca);
+							gfad_map_text_to_select($countryf, $statetext, $stateselect);
 						}
 					}
 					
